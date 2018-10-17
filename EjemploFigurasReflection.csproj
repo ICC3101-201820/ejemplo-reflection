@@ -32,7 +32,7 @@
   <ItemGroup>
     <Reference Include="FiguraBase, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\FiguraBase\bin\Debug\netstandard1.4\FiguraBase.dll</HintPath>
+      <HintPath>Libraries\FiguraBase.dll</HintPath>
     </Reference>
     <Reference Include="System" />
   </ItemGroup>
@@ -40,6 +40,11 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Cuadrado.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="Triangulo.cs" />
     <Compile Include="Circulo.cs" />
     <Compile Include="Log.cs" />
@@ -47,6 +52,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Libraries\FiguraBase.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
