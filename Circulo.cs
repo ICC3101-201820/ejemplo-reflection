@@ -1,4 +1,6 @@
 ﻿using System;
+using FiguraBase;
+
 namespace Laboratorio_5
 {
     public class Circulo : Figura

@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using FiguraBase;
+using System.Reflection;
 
 namespace Laboratorio_5
 {
@@ -8,42 +11,37 @@ namespace Laboratorio_5
         // Opciones menu inicial
         private const string OPCION_SALIR = "0";
         private const string OPCION_SELECCIONAR_FIGURA = "1";
-
-        // Opciones menu figuras
-        private const string OPCION_CUADRADO = "1";
-        private const string OPCION_TRIANGULO = "2";
-        private const string OPCION_CIRCULO = "3";
+        private const string OPCION_IMPORTAR_PLUGIN = "2";
 
         // Opciones menu figura
         private const string OPCION_CALCULAR_AREA = "1";
         private const string OPCION_CALCULAR_PERIMETRO = "2";
 
-        /**
-         * Esta funcion nos permite pedir n lado de fom más sencilla. Solicita un numero válido y que sea mayor a 0
-         */
-        static double PedirLado(string solicitud)
+        // Listado de tipos
+        private static List<Type> figureTypes = new List<Type>();
+
+        static void ImportarPlugin()
         {
-            Log.Question(solicitud);
-            double numero = 0;
-            bool valido = false;
-            while (!valido)
+            Log.Question("\nIngresa la ruta del plug-in");
+            string ruta = Console.ReadLine();
+            Assembly assembly = Assembly.LoadFrom(ruta);
+            int importadas = 0;
+            foreach (Type type in assembly.GetTypes())
             {
-                bool transformacionExitosa = double.TryParse(Console.ReadLine(), out numero);
-                if (transformacionExitosa && numero > 0)
-                    valido = true;
-                else
-                    Log.Error($"Debe ingresar un número double mayor que {numero}");
+                if (type.IsSubclassOf(typeof(Figura)))
+                {
+                    Log.Write(string.Format("Agregando {0}...", type.Name));
+                    figureTypes.Add(type);
+                    importadas += 1;
+                }
             }
-            return numero;
+            if (importadas == 0)
+                Log.Error("No existían figuras a importar");
+            else
+                Log.Success(string.Format("{0} figura(s) importadas", importadas));
         }
 
-        public static void PresionarParaContinuar()
-        {
-            Log.Write("Presiona cualquier tecla para continuar...");
-            Console.ReadKey();
-        }
-
-        public static void MenuInicial()
+        static void MenuInicial()
         {
             Log.WriteLineWithColor("Bienvenido! En este programa podrás calcular algunas propiedades de tus figuras favoritas: cuadrados, círculos y triángulos", ConsoleColor.Cyan);
 
@@ -51,6 +49,7 @@ namespace Laboratorio_5
             {
                 Log.Question("\n¿Qué deseas hacer?");
                 Console.WriteLine($"[{OPCION_SELECCIONAR_FIGURA}] Seleccionar figura");
+                Console.WriteLine($"[{OPCION_IMPORTAR_PLUGIN}] Importar plug-in");
                 Console.WriteLine($"[{OPCION_SALIR}] Salir");
                 Console.WriteLine("");
 
@@ -60,6 +59,10 @@ namespace Laboratorio_5
                 {
                     MenuFiguras();
                 }
+                else if (opcion == OPCION_IMPORTAR_PLUGIN)
+                {
+                    ImportarPlugin();
+                }
                 else
                 {
                     Log.Write("Hasta pronto!");
@@ -68,52 +71,45 @@ namespace Laboratorio_5
             }
         }
 
-        public static void MenuFiguras()
+        static void MenuFiguras()
         {
             while (true)
             {
                 Console.WriteLine("\nLas figuras que tenemos disponibles son:");
-                Console.WriteLine($"[{OPCION_CUADRADO}] Cuadrado");
-                Console.WriteLine($"[{OPCION_TRIANGULO}] Triángulo");
-                Console.WriteLine($"[{OPCION_CIRCULO}] Círculo");
+                for(int i = 0; i < figureTypes.Count; i++)
+                    Console.WriteLine($"[{i + 1}]: {figureTypes[i].Name}");
                 Console.WriteLine($"[{OPCION_SALIR}] Volver al menú\n");
 
-                Log.Question("¿Cuál quieres seleccionar?");
-                string opcion = Console.ReadLine();
+                int opcion = Usuario.PedirEntero("¿Cuál quieres seleccionar?");
 
-                if (opcion == OPCION_CUADRADO)
-                {
-                    double lado = PedirLado("\nIngresa el lado del cuadrado");
-                    Cuadrado cuadrado = new Cuadrado(lado);
-                    MenuFigura(cuadrado);
-                }
-                else if (opcion == OPCION_TRIANGULO)
-                {
-                    double a = PedirLado("\nIngresa el lado a del triángulo");
-                    double b = PedirLado("\nIngresa el lado b del triángulo");
-                    double c = PedirLado("\nIngresa el lado c del triángulo");
-                    double h = PedirLado("\nIngresa la altura h del triángulo");
-                    Triangulo triangulo = new Triangulo(a, b, c, h);
-                    MenuFigura(triangulo);
-                }
-                else if (opcion == OPCION_CIRCULO)
-                {
-                    double radio = PedirLado("\nIngresa el radio del círculo");
-                    Circulo circulo = new Circulo(radio);
-                    MenuFigura(circulo);
-                }
-                else if (opcion == OPCION_SALIR)
+                if (opcion == 0)
                 {
                     break;
                 }
                 else
                 {
-                    Log.Error($"La opción ingresada ({opcion}) no existe");
+                    int indice = opcion - 1;
+                    bool estaEnLaLista = indice >= 0 || indice < figureTypes.Count;
+                    if (estaEnLaLista)
+                    {
+                        Type tipoFigura = figureTypes[indice];
+                        var constructorInfo = tipoFigura.GetConstructors()[0];
+                        var constructorParams = constructorInfo.GetParameters();
+                        var parameters = new object[constructorParams.Length];
+                        for(int i = 0; i < constructorParams.Length; i++)
+                            parameters[i] = Usuario.PedirLado(string.Format("\nIngresa el valor de {0}:", constructorParams[i].Name));
+                        Figura figura = (Figura) constructorInfo.Invoke(parameters);
+                        MenuFigura(figura);
+                    }
+                    else
+                    {
+                        Log.Error($"La opción ingresada ({opcion}) no existe");
+                    }
                 }
             }
         }
 
-        public static void MenuFigura(Figura figura)
+        static void MenuFigura(Figura figura)
         {
             Log.Success($"\n¡Haz creado tu {figura.Nombre}!");
 
@@ -130,15 +126,15 @@ namespace Laboratorio_5
 
                 if (opcion == OPCION_CALCULAR_AREA)
                 {
-                    Log.Log("Calculando área...\n");
+                    Log.Write("Calculando área...\n");
                     Log.Success($"El área de tu {figura.Nombre} es {figura.Area()}\n");
-                    PresionarParaContinuar();
+                    Usuario.PresionarParaContinuar();
                 }
                 else if (opcion == OPCION_CALCULAR_PERIMETRO)
                 {
                     Log.Write("Calculando perímetro...\n");
-                    Log.Success($"El perímetro de tu {figura.Nombre} es {figura.Area()}\n");
-                    PresionarParaContinuar();
+                    Log.Success($"El perímetro de tu {figura.Nombre} es {figura.Perimetro()}\n");
+                    Usuario.PresionarParaContinuar();
                 }
                 else if (opcion == OPCION_SALIR)
                 {
@@ -148,7 +144,7 @@ namespace Laboratorio_5
                 else
                 {
                     Log.Error("La opción ingresada ({0}) no existe");
-                    PresionarParaContinuar();
+                    Usuario.PresionarParaContinuar();
                 }
             }
         }
@@ -157,6 +153,10 @@ namespace Laboratorio_5
         {
             Console.BackgroundColor = ConsoleColor.Black;
             Console.ForegroundColor = ConsoleColor.White;
+            // Aquí agregamos figuras base de nuestro programa
+            figureTypes.Add(typeof(Circulo));
+            figureTypes.Add(typeof(Cuadrado));
+            figureTypes.Add(typeof(Triangulo));
             MenuInicial();
         }
     }
